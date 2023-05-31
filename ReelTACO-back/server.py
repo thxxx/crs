@@ -8,6 +8,7 @@ import time
 from utils import ask_question, make_recommendation
 from recommend import return_top_3_and_score
 import math
+import json
 
 # # simCSE
 # tokenizer = AutoTokenizer.from_pretrained("princeton-nlp/unsup-simcse-roberta-base")
@@ -34,7 +35,6 @@ session_infos={
     "recommended_movies":[],
     "context":"",
 }
-stored_data=[]
 
 @app.route('/api', methods=['POST'])
 def index():
@@ -46,27 +46,34 @@ def index():
         if session_infos['bots'][math.floor(req_data['index']/2)]['type'] == "ASK":
             print("asking good")
         else:
+            stored_data=[]
             stored_data.append({
-                "context":session_infos["context"],
-                "recommended_movies":session_infos["recommended_movies"]
+                "context": session_infos["context"],
+                "recommended_movies": session_infos["recommended_movies"],
+                "feeback": req_data['type']
             })
-        print("req_data : ", stored_data)
-        return jsonify({'error': 'Invalid request format'})
+            with open("feedback.json", "a") as jso:
+                json.dump(stored_data, jso)
+        return jsonify([[],[]])
+        # return jsonify({'error': 'Invalid request format'})
 
     response_data = req_data[:]  # 요청 데이터를 복사하여 response_data 초기화
     query = req_data[-1]['desc']
     print("\n\n", session_infos['context'], "\n\n")
 
     if query == "reset":
+        print("리셋합니다")
         session_infos['per_question']=[]
         session_infos['users']=[]
         session_infos['bots']=[]
         session_infos['recommended_movies']=[]
         session_infos['context']=""
+        stored_data=[]
         
         response_data.append({
             'type': 'recommender',
-            'desc': "ok, conversation is reseted."
+            'desc': "ok, conversation is reseted.",
+            'feedback': ""
         })
         return jsonify([response_data, []])
 
@@ -106,6 +113,7 @@ def index():
         "type":"ASK",
         "feedback":"",
     }
+    response = ""
     if len(session_infos['recommended_movies'])>3 or rec_movies[0]['score'] >= threshold:
         # 이제는 추천하기
         # 추천 하기로 결정
@@ -113,12 +121,13 @@ def index():
         # response = make_recommendation(session_infos['context'], ["Avatar"])
         # response = make_recommendation(session_infos['context'], [rec_movies[0]['title']])
         response_body['type']="REC"
+        response = "Recommender : Watch this movie!"
     elif rec_movies[0]['score'] < threshold:
         # 질문 하기로 결정
         # response = ask_question(session_infos['context'])
         response_body['type']="ASK"
-    
-    response = "Recommender : Ok let me know"
+        response = "Recommender : Ok let me know"
+
     print("\n받은 응답 : ", response, "\n")
 
     response_body['text']=response
@@ -128,61 +137,11 @@ def index():
     # 새로운 객체 생성 및 배열 맨 끝에 추가
     response_data.append({
         'type': 'recommender',
-        'desc': response
+        'desc': response,
+        'feedback': '',
     })
 
     return jsonify([response_data, rec_movies])
-
-
-# import tensorflow as tf
-# from tensorflow.keras.models import Sequential
-# from tensorflow.keras.layers import LSTM, Dense
-
-# # 데이터 준비
-# names = ['Alice', 'Bob', 'Charlie', 'David', 'Eve']
-# greetings = ['Hello', 'Hi', 'Hey', 'Greetings', 'Welcome']
-
-# # 데이터 전처리
-# name_to_greeting = dict(zip(names, greetings))
-
-# # 모델 구성
-# model = Sequential()
-# model.add(LSTM(64, input_shape=(5, 1)))  # 입력 크기는 (시퀀스 길이, 1)
-# model.add(Dense(len(greetings), activation='softmax'))
-# model.compile(loss='categorical_crossentropy', optimizer='adam', metrics=['accuracy'])
-
-# # 모델 학습
-# X = []
-# y = []
-# for name, greeting in name_to_greeting.items():
-#     X.append([ord(c) for c in name])  # 각 이름의 문자를 아스키 코드로 변환하여 입력 데이터에 추가
-#     y.append(greetings.index(greeting))  # 해당 인사말의 인덱스를 타깃 데이터에 추가
-
-# X = tf.keras.preprocessing.sequence.pad_sequences(X, padding='post', maxlen=5)  # 시퀀스 길이를 5로 맞추고 패딩
-# X = tf.expand_dims(X, axis=-1)  # 차원 확장
-# y = tf.keras.utils.to_categorical(y, num_classes=len(greetings))  # 원-핫 인코딩
-
-# model.fit(X, y, epochs=10)
-
-# @app.route('/', methods=['GET'])
-# def index():
-#     name = request.args.get('name', '')
-
-#     if not name:
-#         return jsonify({'error': 'Name is missing'})
-
-    # 입력 데이터 전처리
-    # x = [ord(c) for c in name]
-    # x = tf.keras.preprocessing.sequence.pad_sequences([x], padding='post', maxlen=5)
-    # x = tf.expand_dims(x, axis=-1)  # 차원 확장
-
-    # # 모델 예측
-    # prediction = model.predict(x)
-    # predicted_greeting = greetings[prediction.argmax()]
-
-    # response = {'greeting': predicted_greeting}
-
-    # return jsonify(response)
 
 if __name__ == '__main__':
     app.run(port=5001)

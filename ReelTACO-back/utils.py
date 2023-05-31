@@ -27,13 +27,12 @@ def ask_question(context):
   you should respond to the seeker and ask a question to figure out what movies to recommend for better recommendation. Do not recommend a movie.\
   You should start with \"recommender:\".\n\n conversation:{context}"
   past = time.time()
-  print("\n\n여기서 질문하는 것 까지 왔음\n\n")
+
   response = openai.ChatCompletion.create(model="gpt-3.5-turbo", 
           messages=[
             {"role": "system", "content": "You are recommending good movies"},
             {"role": "user", "content": PROMPT},
           ], temperature=0.5, max_tokens=500)
   taken_time = time.time() - past
-  print("\ndhrllg 오기는 했다  ", response)
 
   return response["choices"][0]["message"]["content"]

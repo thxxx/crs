@@ -5,20 +5,27 @@ import React from 'react'
 type Props = {
   index: number
   desc: string
+  feedback: '' | 'like' | 'dislike'
   onClickFeedback: (index: number, type: 'like' | 'dislike') => void
 }
 
-const RecommenderTalk = ({ index, desc, onClickFeedback }: Props) => {
+const RecommenderTalk = ({ index, desc, feedback, onClickFeedback }: Props) => {
   return (
     <RecommenderTalkContainer>
       <Talk>
         <Text>{desc}</Text>
       </Talk>
       <div style={{ display: 'flex' }}>
-        <Icon onClick={() => onClickFeedback(index, 'like')}>
+        <Icon
+          onClick={() => onClickFeedback(index, 'like')}
+          style={{ background: feedback === 'like' ? `blue` : 'gray' }}
+        >
           <Image src='/like.png' width={17} height={17} alt='like' />
         </Icon>
-        <Icon onClick={() => onClickFeedback(index, 'dislike')}>
+        <Icon
+          onClick={() => onClickFeedback(index, 'dislike')}
+          style={{ background: feedback === 'dislike' ? `red` : 'gray' }}
+        >
           <Image src='/dislike.png' width={17} height={17} alt='dislike' />
         </Icon>
       </div>
